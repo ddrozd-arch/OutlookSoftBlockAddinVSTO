@@ -9,7 +9,48 @@ public partial class ThisAddIn
     {
         this.Application.ItemSend += Application_ItemSend;
     }
+private void Application_ItemSend(object Item, ref bool Cancel)
+{
+    if (Item is Outlook.MailItem mail)
+    {
+        var checkedDomains = new HashSet<string>(); // To store unique domains
+        var unverifiedDomains = new HashSet<string>(); // To accumulate unverified domains
 
+        // Iterate through all recipients
+        foreach (Outlook.Recipient recipient in mail.Recipients)
+        {
+            // Get the SMTP address of the recipient
+            var address = DomainValidator.GetSmtpAddress(recipient);
+            if (string.IsNullOrEmpty(address))
+                continue;
+
+            // Extract the domain from the email address
+            var domain = address.Split('@').Last();
+            if (!checkedDomains.Add(domain)) // Skip if domain is already processed
+                continue;
+
+            // Check if the domain is verified (safe or present in contacts)
+            if (DomainValidator.IsSafe(domain) || DomainValidator.IsInContacts(address, Application))
+                continue;
+
+            // Add unverified domain
+            unverifiedDomains.Add(domain);
+        }
+
+        // If there are unverified domains, show a single prompt
+        if (unverifiedDomains.Any())
+        {
+            using (var form = new PromptForm(unverifiedDomains.ToList()))
+            {
+                if (form.ShowDialog() == System.Windows.Forms.DialogResult.Cancel)
+                {
+                    Cancel = true; // Cancel sending the email if user cancels
+                    return;
+                }
+            }
+        }
+    }
+}
     private void Application_ItemSend(object Item, ref bool Cancel)
     {
         if (Item is Outlook.MailItem mail)
