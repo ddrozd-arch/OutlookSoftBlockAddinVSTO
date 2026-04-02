@@ -1,5 +1,7 @@
+c#
 using Outlook = Microsoft.Office.Interop.Outlook;
 using System.Linq;
+using System.Collections.Generic;
 
 public partial class ThisAddIn
 {
@@ -12,26 +14,20 @@ public partial class ThisAddIn
     {
         if (Item is Outlook.MailItem mail)
         {
-            var recipients = mail.Recipients;
-            foreach (Outlook.Recipient recipient in recipients)
+            var checkedEmails = new HashSet<string>();
+
+            foreach (Outlook.Recipient recipient in mail.Recipients)
             {
                 var address = DomainValidator.GetSmtpAddress(recipient);
-
-                if (string.IsNullOrEmpty(address))
+                if (string.IsNullOrEmpty(address) || !checkedEmails.Add(address))
                     continue;
 
-                if (DomainValidator.IsSafe(address))
+                if (DomainValidator.IsSafe(address) || DomainValidator.IsInContacts(address, Application))
                     continue;
 
-                if (DomainValidator.IsInContacts(address, Application))
-                    continue;
-
-                // 🔴 Soft-block popup
                 using (var form = new PromptForm(address))
                 {
-                    var result = form.ShowDialog();
-
-                    if (result == System.Windows.Forms.DialogResult.Cancel)
+                    if (form.ShowDialog() == System.Windows.Forms.DialogResult.Cancel)
                     {
                         Cancel = true;
                         return;
