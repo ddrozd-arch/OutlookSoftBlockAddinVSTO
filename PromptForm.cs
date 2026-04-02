@@ -1,56 +1,42 @@
+// Updated code to display a list of domains and allow user intervention
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Windows.Forms;
-using System.Drawing;
 
-public class PromptForm : Form
+namespace OutlookSoftBlockAddinVSTO
 {
-    public PromptForm(string email)
+    public partial class PromptForm : Form
     {
-        Text = "Ostrzeżenie";
-        Width = 400;
-        Height = 180;
+        private List<string> domains;
 
-        var label = new Label()
+        public PromptForm()
         {
-            Text = email.Length > 30 ? $"Wysyłasz do zewnętrznego adresu:\n{email.Substring(0, 27)}...\nCzy kontynuować?" : $"Wysyłasz do zewnętrznego adresu:\n{email}\nCzy kontynuować?",
-            Dock = DockStyle.Top,
-            Height = 80,
-            Padding = new Padding(10)
-        };
+            InitializeComponent();
+            InitializeDomainList();
+        }
 
-        var btnOk = new Button()
+        private void InitializeDomainList()
         {
-            Text = "Wyślij",
-            DialogResult = DialogResult.OK,
-            Width = 100,
-            Height = 30,
-            Top = 95,
-            Left = 80
-        };
+            // Example list of domains
+            domains = new List<string> { "example1.com", "example2.com", "example3.com" };
 
-        var btnCancel = new Button()
-        {
-            Text = "Anuluj",
-            DialogResult = DialogResult.Cancel,
-            Width = 100,
-            Height = 30,
-            Top = 95,
-            Left = 200
-        };
+            // Display the list to the user
+            var domainList = string.Join("\n", domains);
+            var confirmationResult = MessageBox.Show(
+                "Please review the following domains:\n" + domainList + "\nProceed?", 
+                "Domain Review", 
+                MessageBoxButtons.YesNo 
+            );
 
-        var layout = new TableLayoutPanel
-        {
-            Dock = DockStyle.Fill,
-            RowCount = 2,
-            ColumnCount = 2,
-            Padding = new Padding(10)
-        };
-        layout.Controls.Add(label, 0, 0);
-        layout.SetColumnSpan(label, 2);
-        layout.Controls.Add(btnOk, 0, 1);
-        layout.Controls.Add(btnCancel, 1, 1);
-        Controls.Add(layout);
-
-        AcceptButton = btnOk;
-        CancelButton = btnCancel;
+            // User intervention result
+            if (confirmationResult == DialogResult.No)
+            {
+                // Handle if user chooses not to proceed
+                MessageBox.Show("Operation cancelled by the user.");
+                this.Close();
+            }
+        }
     }
 }
